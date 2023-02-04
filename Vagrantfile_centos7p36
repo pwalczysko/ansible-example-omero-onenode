@@ -1,0 +1,24 @@
+Vagrant.configure("2") do |config|
+
+    config.vm.define "server" do |server|
+        server.vm.box = "centos/7"
+        server.vm.network "private_network", ip: "192.168.56.102", :name => 'vboxnet0', :adapter => 2
+        server.vm.network "forwarded_port", guest: 4063, host: 4063, auto_correct: true
+        server.vm.network "forwarded_port", guest: 4064, host: 4064, auto_correct: true
+		server.vm.network "forwarded_port", guest: 80, host: 8080, auto_correct: true
+		server.vm.network "forwarded_port", guest: 443, host: 8443, auto_correct: true
+
+        server.vm.provider "virtualbox" do |vb|
+            vb.name = "server"
+            vb.memory = "20048"
+            vb.cpus = "2"
+        end
+    end
+
+	config.vm.provision "shell", inline: <<-SHELL
+	  sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config
+	  echo 'MaxAuthTries 100' >> /etc/ssh/sshd_config    
+	  systemctl restart sshd.service
+          yum makecache fast && yum install -y /usr/bin/python /usr/bin/python2-config sudo yum-plugin-ovl bash iproute ca-certificates && sed -i 's/plugins=0/plugins=1/g' /etc/yum.conf && yum clean all
+	SHELL
+end
