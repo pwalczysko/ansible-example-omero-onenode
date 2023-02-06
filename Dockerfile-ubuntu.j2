@@ -1,0 +1,18 @@
+FROM ubuntu:20.04
+MAINTAINER ome-devel@lists.openmicroscopy.org.uk
+
+# INSTALL PYTHON
+RUN apt-get update && apt-get install -y sudo bash ca-certificates iproute2 python-apt aptitude python3.8 python3.8 python3-distutils curl libpq-dev build-essential python3.8-dev && apt-get clean
+RUN rm /usr/bin/python3
+RUN ln -s /usr/bin/python3.8 /usr/bin/python3
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+RUN python3.8 get-pip.py
+RUN pip3.8 install --upgrade pip
+
+RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 10
+ENV PYTHONPATH "${PYTHONPATH}:."
+RUN pip3 install --trusted-host pypi.python.org ansible
+EXPOSE 4064 4063 8080 80 443 4080
+
+
+### then setting the app needs and entrypoint

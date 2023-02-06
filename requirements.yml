@@ -9,5 +9,8 @@
 - src: ome.omero_server
   version: 4.0.2
 
+- src: ome.ice
+  version: 4.3.0
+
 - src: ome.omero_web
   version: 4.0.1

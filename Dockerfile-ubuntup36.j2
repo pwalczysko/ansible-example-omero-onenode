@@ -1,0 +1,9 @@
+FROM ubuntu:18.04
+
+
+# INSTALL PYTHON
+RUN apt-get update && apt-get install -y sudo bash ca-certificates iproute2 python-apt aptitude python3-distutils curl libpq-dev build-essential && apt-get clean
+
+
+EXPOSE 80 4064 4063 22
+### then setting the app needs and entrypoint

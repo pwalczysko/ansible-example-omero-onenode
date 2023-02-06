@@ -1,11 +1,11 @@
 ---
-- hosts: all
+- hosts: containers
   tasks:
     - name: Set OS distribution dependent variables
       include_vars: "{{ ansible_facts['os_family'] | lower }}.yml"
       when: ansible_facts['os_family'] == "Debian"
 
-- hosts: all
+- hosts: containers
   roles:
     - role: ome.postgresql
       postgresql_databases:
@@ -15,8 +15,89 @@
           password: omero
           databases: [omero]
     - role: ome.omero_server
+      omero_server_python_addons:
+        - "reportlab<3.6"
+        - markdown
       omero_server_selfsigned_certificates: true
       omero_server_rootpassword: ChangeMe
     - role: ome.omero_web
+      omero_web_config_set:
+        omero.web.apps:
+          - "omero_iviewer"
+          - "omero_figure"
+          - "omero_fpbioimage"
+          - "omero_webtagging_autotag"
+          - "omero_webtagging_tagsearch"
+          - "omero_parade"
+          - "omero_mapr"
+        omero.web.ui.center_plugins:
+          - ["Auto Tag", "omero_webtagging_autotag/auto_tag_init.js.html", "auto_tag_panel"]
+          - ["Parade", "omero_parade/init.js.html", "omero_parade"]
+        omero.web.ui.top_links:
+          - ["Data", "webindex", {"title": "Browse Data via Projects, Tags etc"}]
+          - ["History", "history", {"title": "History"}]
+          - ["Help", "https://help.openmicroscopy.org/", {"title": "Open OMERO user guide in a new tab", "target": "new"}]
+          - ["Figure", "figure_index", {"title": "Open Figure in new tab", "target": "_blank"}]
+          - ["Tag Search", "tagsearch"]
+          - ["Genes", {"query_string": {"experimenter": -1}, "viewname": "maprindex_gene"}, {"title": "Find Gene annotations"}]
+          - ["Key-Value", {"viewname": "maprindex_keyvalue"}, {"title": "Search for manually-added Key-Value pairs"}]
+        omero.web.open_with:
+          - ["Image viewer", "webgateway", {"supported_objects": ["image"], "script_url": "webclient/javascript/ome.openwith_viewer.js"}]
+          - ["omero_figure", "new_figure", {"supported_objects":["images"], "target": "_blank", "label": "OMERO.figure"}]
+          - ["omero_fpbioimage", "fpbioimage_index", {"supported_objects":["image"], "script_url": "fpbioimage/openwith.js", "label": "FPBioimage"}]
+          - - omero_iviewer
+            - omero_iviewer_index
+            - supported_objects:
+                - images
+                - dataset
+                - well
+              script_url: omero_iviewer/openwith.js
+              label: OMERO.iviewer
+        omero.web.viewer.view: omero_iviewer.views.index
+        omero.web.mapr.config:
+          - menu: gene
+            config:
+              default:
+                - "Gene Symbol"
+              all:
+                - "Gene Symbol"
+                - "Gene Identifier"
+              ns:
+                - "openmicroscopy.org/mapr/gene"
+              label: "Gene"
+          - menu: keyvalue
+            config:
+              default:
+                - "Any Value"
+              all: []
+              ns:
+                - "openmicroscopy.org/omero/client/mapAnnotation"
+              label: "KeyValue"
+  
+  tasks:
+    - name: Download the Figure_To_Pdf.py script
+      become: yes
+      get_url:
+        url: https://raw.githubusercontent.com/ome/omero-figure/v{{ omero_figure_release }}/omero_figure/scripts/omero/figure_scripts/Figure_To_Pdf.py
+        dest: /opt/omero/server/OMERO.server/lib/scripts/omero/figure_scripts/Figure_To_Pdf.py
+        mode: 0755
+        owner: "omero-server"
+        group: "omero-server"
+        force: yes
+  
   vars:
+    omero_figure_release: "5.1.0"
+    omero_web_apps_packages:
+      - "omero-figure=={{ omero_figure_release }}"
+      - "omero-fpbioimage"
+      - "omero-iviewer"
+      - "omero-mapr"
+      - "omero-parade"
+      - "omero-webtagging-autotag"
+      - "omero-webtagging-tagsearch"
     postgresql_version: "13"
+    omero_server_config_set:
+      omero.db.poolsize: 60
+      omero.jvmcfg.percent.blitz: 50
+      omero.jvmcfg.percent.indexer: 20
+      omero.jvmcfg.percent.pixeldata: 20
