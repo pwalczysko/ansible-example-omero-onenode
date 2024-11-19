@@ -1,3 +1,4 @@
+import json
 import os
 import pytest
 from time import sleep, time
@@ -8,13 +9,14 @@ testinfra_hosts = testinfra.utils.ansible_runner.AnsibleRunner(
 
 
 OMERO = '/opt/omero/server/OMERO.server/bin/omero'
+ROOT_PASSWORD = 'ChangeMe'
 
 
 def test_db_running_and_enabled(host):
     if host.system_info.distribution == 'ubuntu':
-        service = host.service('postgresql@13-main')
+        service = host.service('postgresql@16-main')
     else:
-        service = host.service('postgresql-13')
+        service = host.service('postgresql-16')
     assert service.is_running
     assert service.is_enabled
 
@@ -30,7 +32,8 @@ def test_omero_login(host):
     env = 'OMERO_USERDIR=/tmp/omero-{}'.format(time())
     with host.sudo('omero-server'):
         host.check_output(
-            '%s %s login -C -s localhost -u root -w ChangeMe' % (env, OMERO))
+            '%s %s login -C -s localhost -u root -w %s' % (
+                env, OMERO, ROOT_PASSWORD))
 
 
 @pytest.mark.parametrize('name', ['omero-web', 'nginx'])
@@ -41,8 +44,10 @@ def test_services_running_and_enabled(host, name):
 
 
 def test_omero_web_first_page(host):
-    out = host.check_output('curl -fsL http://localhost/')
-    assert 'omero:4064' in out
+    out1 = host.check_output('curl -fsL http://localhost')
+    assert 'WEBCLIENT.active_group_id' in out1
+    out2 = host.check_output('curl -fsL http://localhost/webclient/login')
+    assert 'omero:4064' in out2
 
 
 def get_cookie(cookietxt, name):
@@ -71,7 +76,7 @@ def test_omero_web_login(host):
     data = '&'.join([
         'csrfmiddlewaretoken=%s' % csrf,
         'username=root',
-        'password=ChangeMe',
+        'password=%s' % ROOT_PASSWORD,
         'server=1',
         'url=%2Fwebclient%2F',
         ])
@@ -85,3 +90,13 @@ def test_omero_web_login(host):
         if sessionid:
             break
     assert sessionid
+
+
+def test_omero_web_public(host):
+    out = host.check_output(
+        'curl -f http://localhost/webclient/api/containers/')
+    r = json.loads(out)
+    assert r['screens'] == []
+    assert r['plates'] == []
+    assert r['projects'] == []
+    assert r['datasets'] == []
