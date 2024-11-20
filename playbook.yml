@@ -20,4 +20,4 @@
       omero_server_rootpassword: ChangeMe
     - role: ome.omero_web
   vars:
-    postgresql_version: "13"
+    postgresql_version: "16"
