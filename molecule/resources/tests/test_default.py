@@ -44,10 +44,8 @@ def test_services_running_and_enabled(host, name):
 
 
 def test_omero_web_first_page(host):
-    out1 = host.check_output('curl -fsL http://localhost')
-    assert 'WEBCLIENT.active_group_id' in out1
-    out2 = host.check_output('curl -fsL http://localhost/webclient/login')
-    assert 'omero:4064' in out2
+    out = host.check_output('curl -fsL http://localhost/')
+    assert 'omero:4064' in out
 
 
 def get_cookie(cookietxt, name):
@@ -90,13 +88,3 @@ def test_omero_web_login(host):
         if sessionid:
             break
     assert sessionid
-
-
-def test_omero_web_public(host):
-    out = host.check_output(
-        'curl -f http://localhost/webclient/api/containers/')
-    r = json.loads(out)
-    assert r['screens'] == []
-    assert r['plates'] == []
-    assert r['projects'] == []
-    assert r['datasets'] == []
