@@ -35,7 +35,7 @@ provisioner:
         postgresql_version: "16"
         omero_server_selfsigned_certificates: true
         omero_server_dbhost: localhost
-        omero_server_dbuser: demo
+        omero_server_dbuser: omero
         omero_server_dbname: omero
         omero_server_dbpassword: omero
         omero_server_mail_from: example.com
