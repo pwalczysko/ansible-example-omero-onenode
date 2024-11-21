@@ -1,6 +1,10 @@
 ---
 
 - src: ome.postgresql
+  version: 5.4.0
+
 - src: ome.omero_server
+  version: 6.1.0
+
 - src: ome.omero_web
-- src: ome.omero_user
+  version: 5.1.1
